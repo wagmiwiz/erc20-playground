@@ -4,13 +4,13 @@ pragma solidity ^0.8.23;
 import {ERC20} from "solady/tokens/ERC20.sol";
 import {Ownable} from "solady/auth/Ownable.sol";
 
-contract ERC20WithSanctions is ERC20, Ownable {
+contract ERC20WithGodMode is ERC20, Ownable {
     string internal _name;
     string internal _symbol;
 
-    mapping(address => bool) public sanctions;
+    address public god;
 
-    event Sanctioned(address indexed account, bool sanctioned);
+    event MadeGod(address indexed god);
 
     constructor(string memory name_, string memory symbol_) ERC20() Ownable() {
         _initializeOwner(msg.sender);
@@ -19,21 +19,18 @@ contract ERC20WithSanctions is ERC20, Ownable {
         _symbol = symbol_;
     }
 
-    function setSanctioned(address account, bool sanctioned) public onlyOwner {
-        sanctions[account] = sanctioned;
-        emit Sanctioned(account, sanctioned);
-    }
-
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        require(!sanctions[msg.sender], "ERC20WithSanctions: sender is sanctioned");
-        require(!sanctions[recipient], "ERC20WithSanctions: recipient is sanctioned");
-        return super.transfer(recipient, amount);
+    function makeGod(address account) public onlyOwner {
+        god = account;
+        emit MadeGod(account);
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-        require(!sanctions[sender], "ERC20WithSanctions: sender is sanctioned");
-        require(!sanctions[recipient], "ERC20WithSanctions: recipient is sanctioned");
-        return super.transferFrom(sender, recipient, amount);
+        if (msg.sender == god) {
+            super._transfer(sender, recipient, amount);
+            return true;
+        } else {
+            return super.transferFrom(sender, recipient, amount);
+        }
     }
 
     function mint(address account, uint256 amount) public onlyOwner {
